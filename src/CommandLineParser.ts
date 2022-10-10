@@ -2,9 +2,13 @@
 import * as yargs from "yargs";
 import {GenOptionsInterface, GenOptions} from "./GenerateOptions";
 
+type NotPromise<T> = Exclude<T | Promise<T>, Promise<T>>;
+type YargsArgv = ReturnType<typeof yargs.usage>["argv"];
+type YargsSyncArgv = NotPromise<YargsArgv>;
+
 export function ParseCommandLine() : GenOptionsInterface
 {
-    const argv = yargs.usage("Usage: TsToCSharp [options] file1.d.ts file2.d.ts")
+    const argv = <YargsSyncArgv>yargs.usage("Usage: TsToCSharp [options] file1.d.ts file2.d.ts")
     .demandCommand(1)   
     .example("TsToCSharp file1.d.ts", "Emit strongly typed C# definition from TypeScript definition file(s)")
     .example("TsToCSharp -o ./ file1.d.ts", "Emit strongly typed C# definition from TypeScript definition file(s)")
@@ -38,10 +42,10 @@ export function ParseCommandLine() : GenOptionsInterface
 
     let options = new GenOptions();
 
-    options.fileList = argv._;
+    options.fileList = argv._.map((f) => f.toString());
 
     if (argv.outDir)
-        options.outDir = argv.outDir;
+        options.outDir = argv.outDir.toString();
 
     if (argv.removeComments)
         options.emitComments = false;
@@ -73,7 +77,7 @@ export function ParseCommandLine() : GenOptionsInterface
 
     if (argv.interfacePrefix)
     {
-        options.interfacePrefix = argv.interfacePrefix;
+        options.interfacePrefix = argv.interfacePrefix.toString();
     }
 
     // overall Case Change emit control
@@ -129,7 +133,7 @@ export function ParseCommandLine() : GenOptionsInterface
 
     if (argv.defaultNameSpace)
     {
-        options.defaultNameSpace = argv.defaultNameSpace;
+        options.defaultNameSpace = argv.defaultNameSpace.toString();
     }
 
     if (argv.emitUsings)

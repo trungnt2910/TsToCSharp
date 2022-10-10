@@ -1,6 +1,6 @@
 
 import * as sast from "ts-morph";
-import {ts, SyntaxKind, TypeGuards } from 'ts-morph';
+import {ts, SyntaxKind, Node} from 'ts-morph';
 import {ContextInterface} from "./Context";
 import * as cc from "change-case";
 import * as os from "os";
@@ -214,6 +214,7 @@ const ValueTypeTextMap = [
   }
 
   export function emitParameterName(node: (sast.PropertyName 
+    | sast.BindingName
     | sast.StringLiteral
     | sast.ComputedPropertyName
     | sast.NumericLiteral), context: ContextInterface): string {
@@ -282,6 +283,7 @@ export function emitComputedPropertyName(node: sast.ComputedPropertyName,
   }  
 
   export function emitIdentifier(node: (sast.Identifier 
+                                        | sast.BindingName
                                         | sast.PropertyName
                                         | sast.EntityName), 
                                 context: ContextInterface,
@@ -375,7 +377,7 @@ export function emitComputedPropertyName(node: sast.ComputedPropertyName,
       context.genOptions.isCaseChangeInterfaces = false;
     
       const parent = node.getParent();
-      if (TypeGuards.isVariableDeclaration(parent))
+      if (Node.isVariableDeclaration(parent))
       {
         const parenta = emitClassName(parent.getNameNode(), context, false);
         // the constructors in this case do not allow modifiers so we will make this internal by default
@@ -535,8 +537,14 @@ export function emitComputedPropertyName(node: sast.ComputedPropertyName,
   function isUnionNullable(node: sast.UnionTypeNode): boolean {
     
     for (let i = 0, n = node.getTypeNodes().length; i < n; i++) {
-      if (TypeGuards.isNullLiteral(node.getTypeNodes()[i]) || TypeGuards.isUndefinedKeyword(node.getTypeNodes()[i]))
+      if (Node.isNullLiteral(node.getTypeNodes()[i]) 
+      || Node.isUndefinedKeyword(node.getTypeNodes()[i]))
         return true;
+      if (Node.isLiteralTypeNode(node.getTypeNodes()[i])) {
+        const literal = node.getTypeNodes()[i] as sast.LiteralTypeNode;
+        if (literal.getLiteral().getText() === 'null' || literal.getLiteral().getText() === 'undefined')
+          return true;
+      }
     }
     return false;
   }
@@ -553,11 +561,18 @@ export function emitComputedPropertyName(node: sast.ComputedPropertyName,
     var typeMap = [];
     
     for (let i = 0, n = node.getTypeNodes().length; i < n; i++) {
-      if (node.getTypeNodes()[i].getKind() !== SyntaxKind.NullKeyword &&
-      node.getTypeNodes()[i].getKind() !== SyntaxKind.UndefinedKeyword)
+      if (node.getTypeNodes()[i].getKind() === SyntaxKind.NullKeyword &&
+      node.getTypeNodes()[i].getKind() === SyntaxKind.UndefinedKeyword)
         {
-          typeMap.push(node.getTypeNodes()[i]);
+          continue;
         }
+      if (node.getTypeNodes()[i].getKind() === SyntaxKind.LiteralType && 
+      (node.getTypeNodes()[i].getText() === "null" || node.getTypeNodes()[i].getText() === "undefined"))
+      {
+        continue;
+      }
+      
+      typeMap.push(node.getTypeNodes()[i]);
     }
 
     // If we only have one left the output the strongly typed union
@@ -566,7 +581,7 @@ export function emitComputedPropertyName(node: sast.ComputedPropertyName,
       var mappedType = typeMap[0];
 
       // We need to treat arrays a little different to insert the "?" nullable.
-      if (TypeGuards.isArrayTypeNode(mappedType))
+      if (Node.isArrayTypeNode(mappedType))
       {
         const arrayDef = emitTypeNode(mappedType, context);
         const arrayDefBracket = arrayDef.indexOf("[");
@@ -603,7 +618,7 @@ export function emitComputedPropertyName(node: sast.ComputedPropertyName,
 
   export function emitTypeParameters(source: string[], node: sast.Node, context: ContextInterface): void {
 
-    if (TypeGuards.isTypeParameteredNode(node))
+    if (Node.isTypeParametered(node))
     {
       const typeParameters = node.getTypeParameters();
       if (typeof typeParameters !== 'undefined' && typeParameters.length > 0)
@@ -628,7 +643,7 @@ export function emitComputedPropertyName(node: sast.ComputedPropertyName,
     // Since we are appending the constraints we need to save off our context and restore it afterwards
     pushContext(context);
 
-    if (TypeGuards.isTypeParameteredNode(node))
+    if (Node.isTypeParametered(node))
     {
 
       const typeParameters = node.getTypeParameters();

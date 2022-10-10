@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import * as fs from "fs";
-import Ast, {ts, ScriptTarget, getCompilerOptionsFromTsConfig, ModuleResolutionKind} from "ts-morph";
+import {ts, ScriptTarget, getCompilerOptionsFromTsConfig, ModuleResolutionKind, Project} from "ts-morph";
 import * as path from "path";
 import * as os from "os";
 
@@ -10,20 +10,20 @@ import {ParseCommandLine} from "./CommandLineParser";
 import { TsToCSharpGenerator } from './TsToCSharpGenerator';
 import {Context} from "./Context";
 
-function CreateAST(useVirtualFileSystem? : boolean) : Ast
+function CreateAST(useVirtualFileSystem? : boolean) : Project
 {
     let useVFS = false;
     if (useVirtualFileSystem)
         useVFS = true;
 
-    const ast = new Ast({
+    const ast = new Project({
         compilerOptions: {
             target: ScriptTarget.ESNext,
             module: ts.ModuleKind.CommonJS,
             moduleResolution: ModuleResolutionKind.NodeJs,
             noLib: true 
         },
-        useVirtualFileSystem: useVFS,
+        useInMemoryFileSystem: useVFS,
     });
     return ast;
 }
@@ -43,7 +43,7 @@ class Startup {
                 const ast = CreateAST();
                 
                 console.log('Resolving File: ' + fileName + ' => ' + path.resolve(fileName));
-                const sf = ast.addExistingSourceFileIfExists(path.resolve(fileName));
+                const sf = ast.addSourceFileAtPathIfExists(path.resolve(fileName));
                 const sfs = ast.getSourceFiles();
                 const context = new Context(genOptions);
                 
@@ -95,7 +95,7 @@ class Startup {
             console.log('Combining files: ' + virtualFile);
             vfs.writeFileSync(virtualFile, virtualSource);
             
-            ast.addExistingSourceFileIfExists(virtualFile);
+            ast.addSourceFileAtPathIfExists(virtualFile);
 
             const sfs = ast.getSourceFiles();
             const context = new Context(genOptions);

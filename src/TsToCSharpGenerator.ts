@@ -1,7 +1,7 @@
 
 import * as sast from "ts-morph"
 
-import {SourceFile, SyntaxKind, TypeGuards, ts} from "ts-morph";
+import {SourceFile, SyntaxKind, Node, ts} from "ts-morph";
 
 import * as emitter from "./CSharpEmitter";
 import {ContextInterface} from "./Context";
@@ -297,7 +297,7 @@ function visitHeritageClauses(source: string[],
     {
       const typeNode = node.getTypeNode();
       
-      if (TypeGuards.isFunctionTypeNode(typeNode) && typeNode.getReturnTypeNode().getKind() === SyntaxKind.AnyKeyword)
+      if (Node.isFunctionTypeNode(typeNode) && typeNode.getReturnTypeNode().getKind() === SyntaxKind.AnyKeyword)
       {
         const parameters = typeNode.getParameters();
         if (parameters && parameters.length === 2)
@@ -306,7 +306,7 @@ function visitHeritageClauses(source: string[],
           if (parameters[0].getName() === "this")
           {
             const parm2Type = parameters[1].getTypeNode();
-            if (TypeGuards.isTypeReferenceNode(parm2Type)) 
+            if (Node.isTypeReference(parm2Type)) 
             {
               // Note we may want to check for a specific type reference here such as Event
               // or if the type reference extends a DOM Event.
@@ -448,7 +448,7 @@ function visitHeritageClauses(source: string[],
     if (types && types.length > 0)
     {
       const keyof = types[0];
-      if (TypeGuards.isTypeParameterDeclaration(keyof))
+      if (Node.isTypeParameterDeclaration(keyof))
       {
         endNode(node, context);
         return source.join('');
@@ -621,7 +621,7 @@ function visitTypeLiteral(node: sast.TypeLiteralNode, context: ContextInterface)
     {
       const propertyTypeNode = property.getTypeNode();
 
-      if (TypeGuards.isTypeReferenceNode(propertyTypeNode))
+      if (Node.isTypeReference(propertyTypeNode))
       {
         const interfaceName = propertyTypeNode.getText();
         prototypeDefinition = propertyTypeNode.getSourceFile().getInterface(interfaceName);

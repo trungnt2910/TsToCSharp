@@ -1,6 +1,6 @@
 
 import * as sast from "ts-morph";
-import {ts, SyntaxKind, TypeGuards, Node} from "ts-morph"
+import {ts, SyntaxKind, Node} from "ts-morph"
 import {ContextInterface} from "./Context";
 import {Stack} from "./DataStructures";
 import {emitPropertyName, emitMethodName, emitClassName} from "./CSharpEmitter";
@@ -340,7 +340,7 @@ export function isDeclarationOfInterface(node: sast.VariableDeclaration) : boole
     {
       const propType = properties[i].getTypeNode();
 
-      if (TypeGuards.isTypeReferenceNode(propType))
+      if (Node.isTypeReference(propType))
       {
         const typeName = propType.getText();
         const interfaceDec = propType.getSourceFile().getInterface(typeName);
@@ -424,7 +424,7 @@ function loadHeritageInterfaces(node: sast.InterfaceDeclaration, loadDelegate: (
           // We are going to assume right now that the expression is an identifier
           const clauseType = clauseTypes[t];
           const expression = clauseType.getExpression();
-          if (TypeGuards.isIdentifier(expression))
+          if (Node.isIdentifier(expression))
           {
             const interfaceName = expression.getText();
             const interfaceDecl = node.getSourceFile().getInterface(interfaceName);
@@ -456,11 +456,11 @@ export function isMap(node: (sast.InterfaceDeclaration | sast.ClassDeclaration |
   for (let m = 0; m < members.length; m++)
   {
     const member = members[m];
-    if (TypeGuards.isPropertySignature(member))
+    if (Node.isPropertySignature(member))
     {
       const name = member.getName();
       const memberType = member.getNameNode();
-      if (!TypeGuards.isStringLiteral(memberType))
+      if (!Node.isStringLiteral(memberType))
       {
         isMap = false;
         break;
